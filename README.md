@@ -8,7 +8,7 @@ We implement a **hybrid refresh approach**:
 - **Automatic ingestion every 60 minutes** → ensures continuous **historical dataset**.  
 - **On-demand refresh via a Power BI button** → users can fetch the **latest weather snapshot instantly**.  
 
-The solution follows a **Bronze → Silver → Gold** design pattern, separating raw storage, cleaned append logs, and deduplicated reporting data.
+The solution follows a **Medallion Architecture Bronze → Silver → Gold** design pattern, separating raw storage, cleaned append logs, and deduplicated reporting data.
 
 ---
 
@@ -19,12 +19,12 @@ The solution follows a **Bronze → Silver → Gold** design pattern, separating
    - Scrapes weather data for multiple cities.  
    - Saves raw CSV files into:  
      ```
-     Files/RawDataset/weather_dataset {yyyy-MM-dd HH:mm:ss}.csv
+     Files/weather_data_broze/weather_dataset {yyyy-MM-dd HH:mm:ss}.csv
      ```
    - Example: `weather_dataset 2025-08-27 10:15:30.csv`.
 
 2. **Lakehouse (WeatherLakehouse)**  
-   - Stores raw files in `Files/RawDataset`.  
+   - Stores raw files in `Files/weather_data_broze`.  
    - Contains **Silver** and **Gold** Delta tables.
 
 3. **Dataflow Gen2 (Weather Dataflow)**  
@@ -58,7 +58,7 @@ The solution follows a **Bronze → Silver → Gold** design pattern, separating
 ```
 Notebook (Crawler)
     ↓
-Raw CSV files (Files/RawDataset in WeatherLakehouse)
+Raw CSV files (Files/weather_data_broze in WeatherLakehouse)
     ↓
 Dataflow Gen2
     ├─ Silver Table: weather_data_silver (append log)
@@ -165,7 +165,7 @@ HAVING COUNT(*) > 1;
 
 ## 🛠️ Best Practices
 
-- **Keep raw files untouched** → always stored in `Files/RawDataset`.  
+- **Keep raw files untouched** → always stored in `Files/weather_data_broze`.  
 - **Use Silver for append logs** → preserves lineage.  
 - **Use Gold for reporting** → deduped, clean, optimized.  
 - **DirectLake for Power BI** → no dataset refresh needed.  
