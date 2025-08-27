@@ -15,7 +15,7 @@ The solution follows a **Medallion Architecture Bronze → Silver → Gold** des
 
 This project integrates Data Engineering + Business Intelligence capabilities using modern tools:
 
-- Microsoft Fabric
+- **Microsoft Fabric**
    - Unified Data & Analytics SaaS platform.
    - Provides Lakehouse, Dataflow Gen2, Pipelines, and DirectLake for seamless data movement and reporting.
    - Enables Medallion Architecture (Bronze → Silver → Gold).
