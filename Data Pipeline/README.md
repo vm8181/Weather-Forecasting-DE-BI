@@ -1,6 +1,6 @@
 # ⛅ Weather Data Pipeline - Microsoft Fabric
 
-This repository documents the **WeatherHourlyPipeline** built in **Microsoft Fabric Data Pipelines**.  
+This documents the **WeatherHourlyPipeline** built in **Microsoft Fabric Data Pipelines**.  
 The pipeline orchestrates the collection, transformation, and storage of real-time weather data using **Notebook + Dataflow + Wait activity**.
 
 ---
