@@ -52,9 +52,3 @@ Notebook (Data_Crawler) ---> Dataflow (Refresh_Weather_Dataflow) ---> Wait
 - Build **weather trend dashboards** in Power BI  
 - Analyze **temperature, humidity, and rainfall patterns** across major Indian cities  
 - Enable **decision-making** for logistics, travel, and agriculture industries  
-
----
-
-## 📜 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
