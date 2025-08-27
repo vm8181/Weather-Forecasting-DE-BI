@@ -4,7 +4,7 @@
 ## 📖 Project Overview
 This project demonstrates a **modern BI architecture on Microsoft Fabric** for ingesting, transforming, and visualizing **real-time weather data**.  
 
-We implement a **hybrid refresh approach**:
+I implement a **hybrid refresh approach**:
 - **Automatic ingestion every 60 minutes** → ensures continuous **historical dataset**.  
 - **On-demand refresh via a Power BI button** → users can fetch the **latest weather snapshot instantly**.  
 
