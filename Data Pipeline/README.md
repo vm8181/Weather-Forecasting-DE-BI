@@ -1,4 +1,5 @@
 # ⛅ Weather Data Pipeline - Microsoft Fabric
+<img width="1833" height="500" alt="image" src="https://github.com/user-attachments/assets/c66027f7-b2c0-4242-a94c-4a5011aa5ad9" />
 
 This documents the **WeatherHourlyPipeline** built in **Microsoft Fabric Data Pipelines**.  
 The pipeline orchestrates the collection, transformation, and storage of real-time weather data using **Notebook + Dataflow + Wait activity**.
