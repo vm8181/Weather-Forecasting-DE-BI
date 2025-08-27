@@ -1,4 +1,4 @@
-# 🌦 Weather Data Pipeline with Microsoft Fabric Notebook
+# 🌦 Weather Data Extraction with Microsoft Fabric Notebook
 
 This project demonstrates how to build a **real-time weather data pipeline** using **Microsoft Fabric Notebook (Dataflow Gen2)**.  
 The pipeline fetches weather data for major Indian cities using the **OpenWeather API**, processes it with **Python**, and stores the results into **OneLake (Lakehouse Files)** in CSV format.
