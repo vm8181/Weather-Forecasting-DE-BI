@@ -1,212 +1,137 @@
+## Microsoft Fabric (Dataflow Gen2)
 
-# 🌦️ Weather Data Pipeline & Power BI Dashboard
+This demonstrates a bronze–silver–gold dataflow architecture in Microsoft Fabric using Dataflow Gen2 (Power Query M).
 
-## 📖 Project Overview
-This project demonstrates a **modern BI architecture on Microsoft Fabric** for ingesting, transforming, and visualizing **real-time weather data**.  
+I use raw weather datasets (weather_dataset *.csv) stored in Lakehouse Files and transform them step by step into clean, structured tables.
 
-We implement a **hybrid refresh approach**:
-- **Automatic ingestion every 60 minutes** → ensures continuous **historical dataset**.  
-- **On-demand refresh via a Power BI button** → users can fetch the **latest weather snapshot instantly**.  
+### 🏗️ Architecture
+```Raw CSV (Bronze) → Dataflow Gen2 → Silver (Clean, Typed) → Gold (Curated Subset) → Power BI / Analytics```
 
-The solution follows a **Bronze → Silver → Gold** design pattern, separating raw storage, cleaned append logs, and deduplicated reporting data.
+- **Bronze**: Raw files stored in Lakehouse /Files/weather_data_bronze/.
+- **Silver**: Cleaned, typed, and enriched table (weather_data_silver).
+- **Gold**: Analytical subset for reporting (weather_data_gold).
 
----
+Each file contains weather readings (temperature, humidity, pressure, etc.) for multiple cities.
 
-## 🏗️ Architecture
+### 📂 Data Sources
+Input: Multiple CSV files named like
 
-### Components
-1. **Crawler Notebook (Fabric Notebook)**  
-   - Scrapes weather data for multiple cities.  
-   - Saves raw CSV files into:  
-     ```
-     Files/RawDataset/weather_dataset {yyyy-MM-dd HH:mm:ss}.csv
-     ```
-   - Example: `weather_dataset 2025-08-27 10:15:30.csv`.
+```weather_dataset 2025-08-20 10-00-00.csv```
+```weather_dataset 2025-08-20 11-00-00.csv```
 
-2. **Lakehouse (WeatherLakehouse)**  
-   - Stores raw files in `Files/RawDataset`.  
-   - Contains **Silver** and **Gold** Delta tables.
+**Location**: /Files/weather_data_bronze/ inside your Lakehouse.
 
-3. **Dataflow Gen2 (Weather Dataflow)**  
-   - **Silver Table (`weather_data_silver`)**  
-     - Appends all crawled datasets with lineage columns:  
-       - `source_file`, `file_crawl_time`, `ingestion_time`.  
-   - **Gold Table (`weather_data_gold`)**  
-     - Deduplicated by `(city, date_time)`.  
-     - Columns renamed for clarity (e.g. `temperature_c`, `humidity_pct`).  
-     - Used directly by Power BI.
-
-4. **Pipeline (WeatherHourlyPipeline)**  
-   - Orchestrates:
-     1. Run **Notebook (Data_Crawler)**.  
-     2. **Wait 20–30 seconds** (file commit buffer).  
-     3. Refresh **Dataflow Gen2**.  
-   - Runs **every 60 minutes (schedule)**.  
-   - Also exposed to Power BI button via **Power Automate**.
-
-5. **Power BI Dashboard**  
-   - Connects directly to `weather_data_gold` via **DirectLake**.  
-   - Pages:
-     - **Overview**: historical temperature/humidity trends by city.  
-     - **Snapshot**: latest temperature/humidity by city.  
-   - Includes **“Get Latest Data” button** (Power Automate → Run Pipeline).
+Each file contains weather readings (temperature, humidity, pressure, etc.) for multiple cities.
 
 ---
 
-## 🔄 Data Flow
+## ⚙️ Dataflow Queries
 
-```
-Notebook (Crawler)
-    ↓
-Raw CSV files (Files/RawDataset in WeatherLakehouse)
-    ↓
-Dataflow Gen2
-    ├─ Silver Table: weather_data_silver (append log)
-    └─ Gold Table: weather_data_gold (deduped, reporting)
-    ↓
-Pipeline (orchestrates Notebook → Wait → Dataflow refresh)
-    ↓
-Power BI (DirectLake → Gold table)
-    ↓
-Users (historical insights + live button refresh)
-```
+### 1. Silver Layer – `weather_data_silver`
 
----
+**Purpose**:  
+- Load raw CSV files  
+- Filter only weather dataset files  
+- Combine them into one table  
+- Extract crawl timestamp from file name  
+- Apply strong data types  
 
-## ⚙️ Pipeline Configuration
+```m
+let
+// Lakehouse navigation (keep your IDs)
+Source = Lakehouse.Contents(null),
+Navigation = Source{[workspaceId = "abec62f6-1fc0-46ba-a00e-3d9b73229de3"]}[Data],
+#"Navigation 1" = Navigation{[lakehouseId = "78471b36-06e6-4207-8772-243722b76e5b"]}[Data],
 
-**Activities:**
-1. **Data_Crawler (Notebook)**  
-   - Timeout: `0:10:00`  
-   - Retry: `2`  
-   - Retry interval: `120 sec`
+// Files root → expand only the minimal subcolumns we need
+FilesRoot = #"Navigation 1"{[Id = "Files", ItemKind = "Folder"]}[Data],
+#"Expanded Content" =
+    Table.ExpandTableColumn(
+        FilesRoot,
+        "Content",
+        {"Content", "Name", "Extension", "Folder Path"},
+        {"Content.1", "Name.1", "Extension.1", "Folder Path.1"}
+    ),
 
-2. **Wait**  
-   - Duration: `20–30 sec` (ensures files are committed in OneLake)
+// Filter only weather CSV files in RawDataset
+#"Filtered to RawDataset" =
+    Table.SelectRows(
+        #"Expanded Content",
+        each Text.Contains([Folder Path.1], "/Files/weather_data_bronze/", Comparer.OrdinalIgnoreCase)
+             and Text.EndsWith([Extension.1], ".csv", Comparer.OrdinalIgnoreCase)
+             and Text.StartsWith([Name.1], "weather_dataset ")
+    ),
 
-3. **Refresh_Weather_Dataflow (Dataflow Gen2)**  
-   - Timeout: `0:20:00`  
-   - Retry: `2`  
-   - Retry interval: `120 sec`
+// Keep minimal file metadata
+#"Kept Minimal File Columns" = Table.SelectColumns(#"Filtered to RawDataset", {"Content.1", "Name.1"}),
 
-**Schedule:** Every **60 minutes**, no concurrent runs.  
+// Apply transform function to all files
+#"Invoke custom function" = Table.AddColumn(#"Kept Minimal File Columns", "Transform file", each #"Transform file"([Content.1])),
 
-**Trigger:** Also exposed via Power Automate for **on-demand refresh**.
+// Expand combined data
+#"Expanded table column" =
+    Table.ExpandTableColumn(
+        #"Invoke custom function",
+        "Transform file",
+        Table.ColumnNames(#"Transform file"(#"Sample file"))
+    ),
 
----
+// Select relevant columns
+#"Selected Data Columns" = Table.SelectColumns(
+    #"Expanded table column",
+    {"date_time","city","temperature(°C)","feels_like(°C)","temp_min(°C)","temp_max(°C)","pressure(hPa)","humidity(%)","visibility(m)","wind_speed(m/s)","wind_deg(°)","cloudiness(%)","weather_main","weather_description","Name.1"}
+),
 
-## 📊 Power BI Setup
+// Add lineage & crawl time
+#"Added source_file" = Table.RenameColumns(#"Selected Data Columns", {{"Name.1", "source_file"}}),
+#"Added file_crawl_time" =
+    Table.AddColumn(
+        #"Added source_file",
+        "file_crawl_time",
+        each try DateTime.FromText( Text.BetweenDelimiters([source_file], "weather_dataset ", ".csv") ) otherwise null,
+        type datetime
+    ),
 
-### Connection
-- Dataset: **weather_data_gold** (DirectLake from Lakehouse).  
-- DirectLake ensures:
-  - No dataset refresh required.  
-  - Reports always show the current Gold table content.  
-
-### Measures
-```DAX
-Latest Timestamp :=
-MAX ( 'weather_data_gold'[date_time] )
-
-Latest Temperature (°C) :=
-VAR ts = [Latest Timestamp]
-RETURN CALCULATE ( AVERAGE ( 'weather_data_gold'[temperature_c] ), 'weather_data_gold'[date_time] = ts )
-
-Latest Humidity (%) :=
-VAR ts = [Latest Timestamp]
-RETURN CALCULATE ( AVERAGE ( 'weather_data_gold'[humidity_pct] ), 'weather_data_gold'[date_time] = ts )
+// Final types
+#"Changed column type" = Table.TransformColumnTypes(#"Added file_crawl_time", {
+    {"date_time", type datetime},
+    {"city", type text},
+    {"temperature(°C)", type number},
+    {"feels_like(°C)", type number},
+    {"temp_min(°C)", type number},
+    {"temp_max(°C)", type number},
+    {"pressure(hPa)", Int64.Type},
+    {"humidity(%)", Int64.Type},
+    {"visibility(m)", Int64.Type},
+    {"wind_speed(m/s)", type number},
+    {"wind_deg(°)", Int64.Type},
+    {"cloudiness(%)", Int64.Type},
+    {"weather_main", type text},
+    {"weather_description", type text},
+    {"source_file", type text},
+    {"file_crawl_time", type datetime}
+})
 ```
 
-### Pages
-- **Overview**:  
-  - Line chart → `date_time` vs `temperature_c` by `city`.  
-  - Card visuals → latest metrics.  
-- **Snapshot**:  
-  - Table of latest weather by city (`Latest Timestamp`).  
-  - Button → “Get Latest Data” (Power Automate).
-
----
-
-## 🚀 Hybrid Refresh Approach
-
-- **Hourly schedule**: Keeps history complete and up-to-date.  
-- **On-demand button**: Fetches live weather instantly.  
-- Ensures both:  
-  - Historical dataset for analysis.  
-  - Live, ad-hoc updates when needed.
-
----
-
-## ✅ Validation & Monitoring
-
-### SQL Checks (Lakehouse SQL Endpoint)
-```sql
--- Latest record timestamp
-SELECT MAX(date_time) AS latest_ts FROM weather_data_gold;
-
--- Coverage by city
-SELECT city, COUNT(*) AS rows_, MIN(date_time) AS first_dt, MAX(date_time) AS last_dt
-FROM weather_data_gold
-GROUP BY city;
-
--- Check duplicates
-SELECT city, date_time, COUNT(*) c
-FROM weather_data_gold
-GROUP BY city, date_time
-HAVING COUNT(*) > 1;
+### 2. Gold Layer – `weather_data_gold`
+**Purpose**:  
+Provide a curated dataset with only analytical columns (drop metadata).  
+```m
+let
+  Source = weather_data_silver,
+  #"Removed other columns" = Table.SelectColumns(Source, {"date_time", "city", "temperature(°C)", "feels_like(°C)", "temp_min(°C)", "temp_max(°C)", "pressure(hPa)", "humidity(%)", "visibility(m)", "wind_speed(m/s)", "wind_deg(°)", "cloudiness(%)", "weather_main", "weather_description"})
+in
+  #"Removed other columns"
 ```
-
-### Monitoring
-- **Pipeline run history** → check success/failures.  
-- **Dataflow refresh history** → row counts.  
-- **Power BI card** → shows `Latest Timestamp` for confidence.
-
 ---
 
-## 🛠️ Best Practices
+### ✅ Output Tables
+- weather_data_silver → Full dataset with lineage & file metadata
+- weather_data_gold → Clean analytical dataset ready for BI
 
-- **Keep raw files untouched** → always stored in `Files/RawDataset`.  
-- **Use Silver for append logs** → preserves lineage.  
-- **Use Gold for reporting** → deduped, clean, optimized.  
-- **DirectLake for Power BI** → no dataset refresh needed.  
-- **Retry & Timeout settings** → handle transient failures gracefully.  
-- **Single source of refresh (Pipeline)** → avoid dedup errors.  
-
----
-
-## 📌 Next Steps / Extensions
-
-- Add **incremental refresh policy** in Dataflow Gen2 (e.g., keep 12 months, refresh last 3 days).  
-- Extend crawler to fetch additional metrics (e.g., AQI, sunrise/sunset).  
-- Add **alerts** (Teams/Email) when pipeline fails.  
-- Integrate **real-time hub** → auto-run pipeline when new CSV lands.  
-- Publish Power BI app with role-based access (city/region-level RLS).  
-
----
-
-## 🗂️ Repository Structure
-```
-/WeatherProject
-│
-├─ /notebooks
-│   └─ crawler_notebook.ipynb
-│
-├─ /dataflows
-│   └─ weather_dataflow.json
-│
-├─ /pipelines
-│   └─ WeatherHourlyPipeline.json
-│
-├─ /powerbi
-│   └─ WeatherReport.pbix
-│
-└─ README.md   ← (this file)
-```
-
----
-
-💡 With this setup, you get **a robust end-to-end BI solution**:  
-✔ Continuous history  
-✔ Live updates on demand  
-✔ Scalable Lakehouse storage  
-✔ Seamless DirectLake reporting  
+### 📊 Usage
+- Connect Power BI directly to the Gold table for reporting.
+- Use Silver for debugging, lineage, and data quality checks.
+- Extend the pipeline by adding a Platinum layer (aggregations, KPIs).
+in
+#"Changed column type"
