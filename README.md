@@ -1,5 +1,5 @@
 
-# 🌦️ Weather Data Pipeline & Power BI Dashboard
+# 🌦️Live Weather Details
 
 ## 📖 Project Overview
 This project demonstrates a **modern BI architecture on Microsoft Fabric** for ingesting, transforming, and visualizing **real-time weather data**.  
@@ -11,6 +11,45 @@ I implement a **hybrid refresh approach**:
 The solution follows a **Medallion Architecture Bronze → Silver → Gold** design pattern, separating raw storage, cleaned append logs, and deduplicated reporting data.
 
 ---
+## 🛠️ Tools & Technologies
+
+This project integrates Data Engineering + Business Intelligence capabilities using modern tools:
+
+- Microsoft Fabric
+   - Unified Data & Analytics SaaS platform.
+   - Provides Lakehouse, Dataflow Gen2, Pipelines, and DirectLake for seamless data movement and reporting.
+   - Enables Medallion Architecture (Bronze → Silver → Gold).
+
+- **Python (with Pandas & Requests)**
+   - Crawler Notebook written in Python scrapes live weather APIs/websites.
+   - Pandas used for data wrangling (cleaning, transforming CSV files).
+   - Handles timestamps, city-level records, and saves CSVs to OneLake.
+
+- **SQL (Fabric SQL Endpoint)**
+   - Used for validation and monitoring queries.
+   - Ensures deduplication, data coverage by city, and latest timestamps.
+   - Helps in data quality checks on Gold tables.
+
+- **Power BI**
+   - Visualizes historical trends and latest weather snapshots.
+   - Connects directly to Gold table via DirectLake → no dataset refresh needed.
+   - Includes “Get Latest Data” button (Power Automate trigger).
+
+- **Power Query / Dataflow Gen2**
+   - Transforms raw Bronze files into Silver (append log) and Gold (deduplicated) Delta tables.
+   - Provides lineage columns (source_file, crawl_time, ingestion_time).
+   - Supports incremental and automated transformations.
+
+- **Data Pipelines (Fabric Pipeline)**
+   - Orchestrates workflow: Crawler Notebook → Wait → Dataflow refresh.
+   - Scheduled hourly runs + on-demand triggers (via Power Automate).
+   - Handles retries, timeouts, and monitoring.
+
+- **Business Intelligence & Data Engineering Integration**
+   - BI layer (Power BI) provides insights, trends, and live snapshots.
+   - DE layer (Fabric Lakehouse, Pipelines, Dataflow) ensures scalable ingestion, transformation, and storage.
+
+Together, they deliver an end-to-end robust BI + DE solution.
 
 ## 🏗️ Architecture
 
