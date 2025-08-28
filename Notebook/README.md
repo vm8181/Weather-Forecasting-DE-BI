@@ -26,7 +26,7 @@ This project uses a **Microsoft Fabric Notebook** with Python code to collect re
    - Saves the DataFrame as a CSV file into:  
 
 ```
-/lakehouse/default/Files/weather_data_bronze/
+/lakehouse/default/Files/forecast_data_bronze/
 ```
 
    - File name includes the current date & time for uniqueness  
