@@ -58,9 +58,9 @@ Together, they deliver an end-to-end robust BI + DE solution.
    - Scrapes weather data for multiple cities.  
    - Saves raw CSV files into:  
      ```
-     Files/weather_data_broze/weather_dataset {yyyy-MM-dd HH:mm:ss}.csv
+     Files/forecast_data_broze/forecast_data {yyyy-MM-dd HH:mm:ss}.csv
      ```
-   - Example: `weather_dataset 2025-08-27 10:15:30.csv`.
+   - Example: `forecast_data 2025-08-27 10:15:30.csv`.
 
 2. **Lakehouse (WeatherLakehouse)**  
    - Stores raw files in `Files/weather_data_broze`.  
@@ -140,21 +140,7 @@ Users (historical insights + live button refresh)
 - Dataset: **weather_data_gold** (DirectLake from Lakehouse).  
 - DirectLake ensures:
   - No dataset refresh required.  
-  - Reports always show the current Gold table content.  
-
-### Measures
-```DAX
-Latest Timestamp :=
-MAX ( 'weather_data_gold'[date_time] )
-
-Latest Temperature (°C) :=
-VAR ts = [Latest Timestamp]
-RETURN CALCULATE ( AVERAGE ( 'weather_data_gold'[temperature_c] ), 'weather_data_gold'[date_time] = ts )
-
-Latest Humidity (%) :=
-VAR ts = [Latest Timestamp]
-RETURN CALCULATE ( AVERAGE ( 'weather_data_gold'[humidity_pct] ), 'weather_data_gold'[date_time] = ts )
-```
+  - Reports always show the current Gold table content.
 
 ### Pages
 - **Overview**:  
