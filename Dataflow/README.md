@@ -16,10 +16,10 @@ Each file contains weather readings (temperature, humidity, pressure, etc.) for 
 ### 📂 Data Sources
 Input: Multiple CSV files named like
 
-```weather_dataset 2025-08-20 10-00-00.csv```
-```weather_dataset 2025-08-20 11-00-00.csv```
+```forecast_data 2025-08-20 10-00-00.csv```
+```forecast_data 2025-08-20 11-00-00.csv```
 
-**Location**: /Files/weather_data_bronze/ inside your Lakehouse.
+**Location**: /Files/forecast_data_bronze/ inside your Lakehouse.
 
 Each file contains weather readings (temperature, humidity, pressure, etc.) for multiple cities.
 
