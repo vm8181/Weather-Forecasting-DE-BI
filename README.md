@@ -178,16 +178,6 @@ HAVING COUNT(*) > 1;
 
 ---
 
-## 📌 Next Steps / Extensions
-
-- Add **incremental refresh policy** in Dataflow Gen2 (e.g., keep 12 months, refresh last 3 days).  
-- Extend crawler to fetch additional metrics (e.g., AQI, sunrise/sunset).  
-- Add **alerts** (Teams/Email) when pipeline fails.  
-- Integrate **real-time hub** → auto-run pipeline when new CSV lands.  
-- Publish Power BI app with role-based access (city/region-level RLS).  
-
----
-
 ## 🗂️ Repository Structure
 ```
 /WeatherProject
