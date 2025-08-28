@@ -40,72 +40,21 @@ Each file contains weather readings (temperature, humidity, pressure, etc.) for 
 
 ```m
 let
-  // ========= Lakehouse navigation =========
-  Source          = Lakehouse.Contents(null),
-  Navigation      = Source{[workspaceId = "abec62f6-1fc0-46ba-a00e-3d9b73229de3"]}[Data],
-  Lh              = Navigation{[lakehouseId  = "78471b36-06e6-4207-8772-243722b76e5b"]}[Data],
+    // ========= Lakehouse navigation =========
+    Source          = Lakehouse.Contents(null),
+    Navigation      = Source{[workspaceId = "abec62f6-1fc0-46ba-a00e-3d9b73229de3"]}[Data],
+    Lh              = Navigation{[lakehouseId  = "78471b36-06e6-4207-8772-243722b76e5b"]}[Data],
 
-  // ========= Files (expand minimal columns only) =========
-  FilesRoot       = Lh{[Id = "Files", ItemKind = "Folder"]}[Data],
-  ExpandedFiles   = Table.ExpandTableColumn(
-                      FilesRoot, "Content",
-                      {"Content", "Name", "Extension", "Folder Path"},
-                      {"FileBinary", "Name.1", "Extension.1", "FolderPath"}
-                    ),
-
-  // ========= Early filter: folder + csv + filename prefix =========
-  Filtered        = Table.SelectRows(
-                      ExpandedFiles,
-                      each Text.Contains([FolderPath], "/Files/forecast_data_bronze/", Comparer.OrdinalIgnoreCase)
-                        and Text.EndsWith([Extension.1], ".csv", Comparer.OrdinalIgnoreCase)
-                        and Text.StartsWith([Name.1], "weather_forecast ")
-                    ),
-
-  // Keep only the two columns we really need from the file list
-  PrunedFiles     = Table.SelectColumns(Filtered, {"FileBinary", "Name.1"}),
-
-  // ========= Parse CSV (self-contained, no helper queries) =========
-  Parsed          = Table.AddColumn(
-                      PrunedFiles, "Data",
-                      each
-                        let
-                          Csv  = Csv.Document([FileBinary],[Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
-                          Tbl  = Table.PromoteHeaders(Csv, [PromoteAllScalars=true])
-                        in
-                          Tbl
-                    ),
-  #"Expanded Data" = Table.ExpandTableColumn(Parsed, "Data", {"crawl_time", "city", "city_lat", "city_lon", "forecast_time", "temp_c", "feels_like_c", "temp_min_c", "temp_max_c", "pressure_hpa", "humidity_pct", "visibility_m", "wind_speed_ms", "wind_deg", "cloudiness_pct", "weather_main", "weather_desc", "pop", "rain_3h_mm", "snow_3h_mm"}, {"crawl_time", "city", "city_lat", "city_lon", "forecast_time", "temp_c", "feels_like_c", "temp_min_c", "temp_max_c", "pressure_hpa", "humidity_pct", "visibility_m", "wind_speed_ms", "wind_deg", "cloudiness_pct", "weather_main", "weather_desc", "pop", "rain_3h_mm", "snow_3h_mm"}),
-
-  // ========= Strong types (defensive) =========
-  Typed           = Table.TransformColumnTypes(
-                      #"Expanded Data",
-                      {
-                        {"crawl_time",      type datetime},
-                        {"forecast_time",   type datetime},
-                        {"city",            type text},
-                        {"city_lat",        type number},
-                        {"city_lon",        type number},
-                        {"temp_c",          type number},
-                        {"feels_like_c",    type number},
-                        {"temp_min_c",      type number},
-                        {"temp_max_c",      type number},
-                        {"pressure_hpa",    type number},
-                        {"humidity_pct",    type number},
-                        {"visibility_m",    type number},
-                        {"wind_speed_ms",   type number},
-                        {"wind_deg",        type number},
-                        {"cloudiness_pct",  type number},
-                        {"weather_main",    type text},
-                        {"weather_desc",    type text},
-                        {"pop",             type number},
-                        {"rain_3h_mm",      type number},
-                        {"snow_3h_mm",      type number}
-                      }
-                    ),
-  #"Renamed columns" = Table.RenameColumns(Typed, {{"Name.1", "source_file"}}),
-  #"Removed columns" = Table.RemoveColumns(#"Renamed columns", {"FileBinary"})
-in
-  #"Removed columns"
+    // ========= Files (expand minimal columns only) =========
+    FilesRoot       = Lh{[Id = "Files", ItemKind = "Folder"]}[Data],
+  #"Expanded Content" = Table.ExpandTableColumn(FilesRoot, "Content", {"Content", "Name", "Extension", "Date accessed", "Date modified", "Date created", "Attributes", "Folder Path"}, {"Content.1", "Name.1", "Extension.1", "Date accessed.1", "Date modified.1", "Date created.1", "Attributes.1", "Folder Path.1"}),
+  #"Filtered hidden files" = Table.SelectRows(#"Expanded Content", each [Attributes]?[Hidden]? <> true),
+  #"Invoke custom function" = Table.AddColumn(#"Filtered hidden files", "Transform file", each #"Transform file"([Content.1])),
+  #"Removed other columns" = Table.SelectColumns(#"Invoke custom function", {"Name.1", "Folder Path.1", "Transform file"}),
+  #"Expanded table column" = Table.ExpandTableColumn(#"Removed other columns", "Transform file", Table.ColumnNames(#"Transform file"(#"Sample file"))),
+  #"Renamed columns" = Table.RenameColumns(#"Expanded table column", {{"Name.1", "source_file"}, {"Folder Path.1", "folder_path"}})
+  in
+    #"Renamed columns"
 ```
 
 ### 2. Gold Layer – `weather_data_gold`
