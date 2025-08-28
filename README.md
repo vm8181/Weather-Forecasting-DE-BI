@@ -1,5 +1,5 @@
 
-# 🌦️Live Weather Details
+# 🌦️The Climate Compass: Weather Forecasting
 
 ## 📖 Project Overview
 This project demonstrates a **modern BI architecture on Microsoft Fabric** for ingesting, transforming, and visualizing **real-time weather data**.  
