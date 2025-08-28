@@ -29,7 +29,7 @@ Each file contains weather readings (temperature, humidity, pressure, etc.) for 
 
 ## ⚙️ Dataflow Queries
 
-### 1. Silver Layer – `weather_data_silver`
+### 1. Silver Layer – `forecast_data_silver`
 
 **Purpose**:  
 - Load raw CSV files  
@@ -40,24 +40,22 @@ Each file contains weather readings (temperature, humidity, pressure, etc.) for 
 
 ```m
 let
-    // ========= Lakehouse navigation =========
-    Source          = Lakehouse.Contents(null),
-    Navigation      = Source{[workspaceId = "abec62f6-1fc0-46ba-a00e-3d9b73229de3"]}[Data],
-    Lh              = Navigation{[lakehouseId  = "78471b36-06e6-4207-8772-243722b76e5b"]}[Data],
-
-    // ========= Files (expand minimal columns only) =========
-    FilesRoot       = Lh{[Id = "Files", ItemKind = "Folder"]}[Data],
-  #"Expanded Content" = Table.ExpandTableColumn(FilesRoot, "Content", {"Content", "Name", "Extension", "Date accessed", "Date modified", "Date created", "Attributes", "Folder Path"}, {"Content.1", "Name.1", "Extension.1", "Date accessed.1", "Date modified.1", "Date created.1", "Attributes.1", "Folder Path.1"}),
+  Source = Lakehouse.Contents([]),
+  #"Navigation 1" = Source{[workspaceId = "abec62f6-1fc0-46ba-a00e-3d9b73229de3"]}[Data],
+  #"Navigation 2" = #"Navigation 1"{[lakehouseId = "78471b36-06e6-4207-8772-243722b76e5b"]}[Data],
+  #"Navigation 3" = #"Navigation 2"{[Id = "Files", ItemKind = "Folder"]}[Data],
+  #"Expanded Content" = Table.ExpandTableColumn(#"Navigation 3", "Content", {"Content", "Name", "Extension", "Date accessed", "Date modified", "Date created", "Attributes", "Folder Path"}, {"Content.1", "Name.1", "Extension.1", "Date accessed.1", "Date modified.1", "Date created.1", "Attributes.1", "Folder Path.1"}),
   #"Filtered hidden files" = Table.SelectRows(#"Expanded Content", each [Attributes]?[Hidden]? <> true),
   #"Invoke custom function" = Table.AddColumn(#"Filtered hidden files", "Transform file", each #"Transform file"([Content.1])),
   #"Removed other columns" = Table.SelectColumns(#"Invoke custom function", {"Name.1", "Folder Path.1", "Transform file"}),
   #"Expanded table column" = Table.ExpandTableColumn(#"Removed other columns", "Transform file", Table.ColumnNames(#"Transform file"(#"Sample file"))),
-  #"Renamed columns" = Table.RenameColumns(#"Expanded table column", {{"Name.1", "source_file"}, {"Folder Path.1", "folder_path"}})
-  in
-    #"Renamed columns"
+  #"Renamed columns" = Table.RenameColumns(#"Expanded table column", {{"Name.1", "source_file"}, {"Folder Path.1", "folder_path"}}),
+  #"Changed column type" = Table.TransformColumnTypes(#"Renamed columns", {{"crawl_time", type datetime}, {"city", type text}, {"city_lat", type number}, {"city_lon", type number}, {"timezone_offset_s", Int64.Type}, {"forecast_time", type datetime}, {"temp_c", type number}, {"feels_like_c", type number}, {"temp_min_c", type number}, {"temp_max_c", type number}, {"pressure_hpa", Int64.Type}, {"humidity_pct", Int64.Type}, {"visibility_m", Int64.Type}, {"wind_speed_ms", type number}, {"wind_deg", Int64.Type}, {"cloudiness_pct", Int64.Type}, {"weather_main", type text}, {"weather_desc", type text}, {"pop", type number}, {"rain_3h_mm", type number}, {"snow_3h_mm", type text}, {"sunrise_ist", type datetime}, {"sunset_ist", type datetime}, {"folder_path", type text}, {"source_file", type text}})
+in
+  #"Changed column type"
 ```
 
-### 2. Gold Layer – `weather_data_gold`
+### 2. Gold Layer – `forecast_data_gold`
 **Purpose**:  
 Provide a curated dataset with only analytical columns (drop metadata).  
 ```m
