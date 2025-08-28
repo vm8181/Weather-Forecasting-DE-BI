@@ -2,7 +2,10 @@
 
 This demonstrates a bronze–silver–gold dataflow architecture in Microsoft Fabric using Dataflow Gen2 (Power Query M).
 
-I use raw weather datasets (weather_dataset *.csv) stored in Lakehouse Files and transform them step by step into clean, structured tables.
+I use raw weather datasets (forecast_data *.csv) stored in Lakehouse Files and transform them step by step into clean, structured tables.
+
+<img width="1563" height="372" alt="image" src="https://github.com/user-attachments/assets/396bfc79-d49f-40b7-a3ca-483303632257" />
+
 
 ### 🏗️ Architecture
 ```Raw CSV (Bronze) → Dataflow Gen2 → Silver (Clean, Typed) → Gold (Curated Subset) → Power BI / Analytics```
