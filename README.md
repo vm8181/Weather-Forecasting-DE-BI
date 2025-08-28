@@ -56,19 +56,19 @@ Together, they deliver an end-to-end robust BI + DE solution.
    - Scrapes weather data for multiple cities.  
    - Saves raw CSV files into:  
      ```
-     Files/forecast_data_broze/weather_forecast {yyyy-MM-dd HH:mm:ss}.csv
+     Files/forecast_data_broze/forecast_data {yyyy-MM-dd HH:mm:ss}.csv
      ```
-   - Example: `weather_forecast 2025-08-27 10:15:30.csv`.
+   - Example: `forecast_data 2025-08-27 10:15:30.csv`.
 
 2. **Lakehouse (WeatherLakehouse)**  
    - Stores raw files in `Files/weather_data_broze`.  
    - Contains **Silver** and **Gold** Delta tables.
 
 3. **Dataflow Gen2 (Weather Dataflow)**  
-   - **Silver Table (`weather_data_silver`)**  
+   - **Silver Table (`forecast_data_silver`)**  
      - Appends all crawled datasets with lineage columns:  
        - `source_file`, `file_crawl_time`, `ingestion_time`.  
-   - **Gold Table (`weather_data_gold`)**  
+   - **Gold Table (`forecast_data_gold`)**  
      - Deduplicated by `(city, date_time)`.  
      - Columns renamed for clarity (e.g. `temperature_c`, `humidity_pct`).  
      - Used directly by Power BI.
@@ -81,7 +81,7 @@ Together, they deliver an end-to-end robust BI + DE solution.
    - Runs **every 60 minutes (schedule)**.
 
 5. **Power BI Dashboard**  
-   - Connects directly to `weather_data_gold` via **DirectLake**.  
+   - Connects directly to `forecast_data_gold` via **DirectLake**.  
    - Pages:
      - **Overview**: Pending.  
      - **Snapshot**: latest temperature/humidity by city.
@@ -95,8 +95,8 @@ Notebook (Crawler)
 Raw CSV files (Files/weather_data_broze in WeatherLakehouse)
     ↓
 Dataflow Gen2
-    ├─ Silver Table: weather_data_silver (append log)
-    └─ Gold Table: weather_data_gold (deduped, reporting)
+    ├─ Silver Table: forecast_data_silver (append log)
+    └─ Gold Table: forecast_data_gold (deduped, reporting)
     ↓
 Pipeline (orchestrates Notebook → Wait → Dataflow refresh)
     ↓
@@ -128,7 +128,7 @@ Users (insights + live refresh)
 ## 📊 Power BI Setup
 
 ### Connection
-- Dataset: **weather_data_gold** (DirectLake from Lakehouse).  
+- Dataset: **forecast_data_gold** (DirectLake from Lakehouse).  
 - DirectLake ensures:
   - No dataset refresh required.  
   - Reports always show the current Gold table content.
@@ -146,16 +146,16 @@ Users (insights + live refresh)
 ### SQL Checks (Lakehouse SQL Endpoint)
 ```sql
 -- Latest record timestamp
-SELECT MAX(date_time) AS latest_ts FROM weather_data_gold;
+SELECT MAX(date_time) AS latest_ts FROM forecast_data_gold;
 
 -- Coverage by city
 SELECT city, COUNT(*) AS rows_, MIN(date_time) AS first_dt, MAX(date_time) AS last_dt
-FROM weather_data_gold
+FROM forecast_data_gold
 GROUP BY city;
 
 -- Check duplicates
 SELECT city, date_time, COUNT(*) c
-FROM weather_data_gold
+FROM forecast_data_gold
 GROUP BY city, date_time
 HAVING COUNT(*) > 1;
 ```
