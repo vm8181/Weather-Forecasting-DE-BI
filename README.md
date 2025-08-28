@@ -31,7 +31,7 @@ This project integrates Data Engineering + Business Intelligence capabilities us
    - Helps in data quality checks on Gold tables.
 
 - **Power BI**
-   - Visualizes historical trends and latest weather snapshots.
+   - Visualizes trends and latest weather snapshots.
    - Connects directly to Gold table via DirectLake → no dataset refresh needed.
 
 - **Power Query / Dataflow Gen2**
@@ -83,7 +83,7 @@ Together, they deliver an end-to-end robust BI + DE solution.
 5. **Power BI Dashboard**  
    - Connects directly to `weather_data_gold` via **DirectLake**.  
    - Pages:
-     - **Overview**: historical temperature/humidity trends by city.  
+     - **Overview**: Pending.  
      - **Snapshot**: latest temperature/humidity by city.
 ---
 
@@ -102,10 +102,8 @@ Pipeline (orchestrates Notebook → Wait → Dataflow refresh)
     ↓
 Power BI (DirectLake → Gold table)
     ↓
-Users (historical insights + live button refresh)
+Users (insights + live refresh)
 ```
-
----
 
 ## ⚙️ Pipeline Configuration
 
