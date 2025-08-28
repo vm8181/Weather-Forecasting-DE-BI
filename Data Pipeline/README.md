@@ -50,6 +50,6 @@ Notebook (Data_Crawler) ---> Dataflow (Refresh_Weather_Dataflow) ---> Wait
 
 ## 📊 Use Case
 
-- Build **weather trend dashboards** in Power BI  
+- Build **weather analysis dashboards** in Power BI  
 - Analyze **temperature, humidity, and rainfall patterns** across major Indian cities  
 - Enable **decision-making** for logistics, travel, and agriculture industries  
