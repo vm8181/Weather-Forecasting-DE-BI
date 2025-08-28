@@ -58,9 +58,9 @@ Together, they deliver an end-to-end robust BI + DE solution.
    - Scrapes weather data for multiple cities.  
    - Saves raw CSV files into:  
      ```
-     Files/forecast_data_broze/forecast_data {yyyy-MM-dd HH:mm:ss}.csv
+     Files/forecast_data_broze/weather_forecast {yyyy-MM-dd HH:mm:ss}.csv
      ```
-   - Example: `forecast_data 2025-08-27 10:15:30.csv`.
+   - Example: `weather_forecast 2025-08-27 10:15:30.csv`.
 
 2. **Lakehouse (WeatherLakehouse)**  
    - Stores raw files in `Files/weather_data_broze`.  
