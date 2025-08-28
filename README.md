@@ -2,13 +2,13 @@
 # 🌦️The Climate Compass: Weather Forecasting
 
 ## 📖 Project Overview
-This project demonstrates a **modern BI architecture on Microsoft Fabric** for ingesting, transforming, and visualizing **real-time weather data**.  
+This project demonstrates an end-to-end data pipeline and analytics solution for live and forecasted weather data using **Microsoft Fabric**. A custom **Python**. crawler **ingests real-time and forecast data from the OpenWeather API**, enriched with metadata such as sunrise/sunset times.
 
-I implement a **hybrid refresh approach**:
-- **Automatic ingestion every 60 minutes** → ensures continuous **historical dataset**.  
-- **On-demand refresh via a Power BI button** → users can fetch the **latest weather snapshot instantly**.  
+On the **Data Engineering** side, the pipeline handles ingestion, lineage, and incremental refreshes. On the **Business Intelligence** side, **Power BI (DirectLake)** delivers **interactive dashboard**, including city-level snapshots, historical trends, and forecast insights.
 
 The solution follows a **Medallion Architecture Bronze → Silver → Gold** design pattern, separating raw storage, cleaned append logs, and deduplicated reporting data.
+
+This project highlights effective collaboration between DE and BI practices—scalable ingestion, clean modeling, and actionable insights for decision-making. 
 
 ---
 ## 🛠️ Tools & Technologies
@@ -33,7 +33,6 @@ This project integrates Data Engineering + Business Intelligence capabilities us
 - **Power BI**
    - Visualizes historical trends and latest weather snapshots.
    - Connects directly to Gold table via DirectLake → no dataset refresh needed.
-   - Includes “Get Latest Data” button (Power Automate trigger).
 
 - **Power Query / Dataflow Gen2**
    - Transforms raw Bronze files into Silver (append log) and Gold (deduplicated) Delta tables.
@@ -42,7 +41,6 @@ This project integrates Data Engineering + Business Intelligence capabilities us
 
 - **Data Pipelines (Fabric Pipeline)**
    - Orchestrates workflow: Crawler Notebook → Wait → Dataflow refresh.
-   - Scheduled hourly runs + on-demand triggers (via Power Automate).
    - Handles retries, timeouts, and monitoring.
 
 - **Business Intelligence & Data Engineering Integration**
@@ -80,16 +78,13 @@ Together, they deliver an end-to-end robust BI + DE solution.
      1. Run **Notebook (Data_Crawler)**.  
      2. **Wait 20–30 seconds** (file commit buffer).  
      3. Refresh **Dataflow Gen2**.  
-   - Runs **every 60 minutes (schedule)**.  
-   - Also exposed to Power BI button via **Power Automate**.
+   - Runs **every 60 minutes (schedule)**.
 
 5. **Power BI Dashboard**  
    - Connects directly to `weather_data_gold` via **DirectLake**.  
    - Pages:
      - **Overview**: historical temperature/humidity trends by city.  
-     - **Snapshot**: latest temperature/humidity by city.  
-   - Includes **“Get Latest Data” button** (Power Automate → Run Pipeline).
-
+     - **Snapshot**: latest temperature/humidity by city.
 ---
 
 ## 🔄 Data Flow
@@ -128,9 +123,7 @@ Users (historical insights + live button refresh)
    - Retry: `2`  
    - Retry interval: `120 sec`
 
-**Schedule:** Every **60 minutes**, no concurrent runs.  
-
-**Trigger:** Also exposed via Power Automate for **on-demand refresh**.
+**Schedule:** Every **60 minutes**, no concurrent runs.
 
 ---
 
@@ -144,21 +137,9 @@ Users (historical insights + live button refresh)
 
 ### Pages
 - **Overview**:  
-  - Line chart → `date_time` vs `temperature_c` by `city`.  
-  - Card visuals → latest metrics.  
+ Pending 
 - **Snapshot**:  
-  - Table of latest weather by city (`Latest Timestamp`).  
-  - Button → “Get Latest Data” (Power Automate).
-
----
-
-## 🚀 Hybrid Refresh Approach
-
-- **Hourly schedule**: Keeps history complete and up-to-date.  
-- **On-demand button**: Fetches live weather instantly.  
-- Ensures both:  
-  - Historical dataset for analysis.  
-  - Live, ad-hoc updates when needed.
+  - Table of latest weather by city (`Latest Timestamp`).
 
 ---
 
