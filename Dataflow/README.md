@@ -115,9 +115,12 @@ Provide a curated dataset with only analytical columns (drop metadata).
 ```m
 let
   Source = weather_data_silver,
-  #"Removed other columns" = Table.SelectColumns(Source, {"date_time", "city", "temperature(°C)", "feels_like(°C)", "temp_min(°C)", "temp_max(°C)", "pressure(hPa)", "humidity(%)", "visibility(m)", "wind_speed(m/s)", "wind_deg(°)", "cloudiness(%)", "weather_main", "weather_description"})
+  #"Removed columns" = Table.RemoveColumns(Source, {"source_file", "folder_path", "timezone_offset_s"}),
+  #"Capitalized each word" = Table.TransformColumns(#"Removed columns", {{"weather_desc", each Text.Proper(Text.From(_)), type nullable text}}),
+  #"Added custom" = Table.AddColumn(#"Capitalized each word", "visibility_km", each Number.FromText([visibility_m]) / 1000),
+  #"Changed column type" = Table.TransformColumnTypes(#"Added custom", {{"crawl_time", type datetime}, {"forecast_time", type datetime}, {"sunrise_ist", type datetime}, {"sunset_ist", type datetime}, {"weather_desc", type text}, {"weather_main", type text}, {"city", type text}, {"snow_3h_mm", type number}, {"rain_3h_mm", type number}, {"pop", type number}, {"wind_speed_ms", type number}, {"cloudiness_pct", type number}, {"wind_deg", type number}, {"humidity_pct", type number}, {"visibility_m", type number}, {"pressure_hpa", type number}, {"temp_max_c", type number}, {"temp_c", type number}, {"feels_like_c", type number}, {"temp_min_c", type number}, {"city_lat", type number}, {"city_lon", type number}, {"visibility_km", type number}})
 in
-  #"Removed other columns"
+  #"Changed column type"
 ```
 ---
 
