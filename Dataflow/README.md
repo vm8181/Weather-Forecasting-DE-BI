@@ -10,7 +10,7 @@ I use raw weather datasets (forecast_data *.csv) stored in Lakehouse Files and t
 ### 🏗️ Architecture
 ```Raw CSV (Bronze) → Dataflow Gen2 → Silver (Clean, Typed) → Gold (Curated Subset) → Power BI / Analytics```
 
-- **Bronze**: Raw files stored in Lakehouse /Files/weather_data_bronze/.
+- **Bronze**: Raw files stored in Lakehouse /Files/forecast_data_bronze/.
 - **Silver**: Cleaned, typed, and enriched table (weather_data_silver).
 - **Gold**: Analytical subset for reporting (weather_data_gold).
 
