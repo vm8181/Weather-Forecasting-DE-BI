@@ -1,3 +1,5 @@
+# 🌈Weather Forecast Analysis
+
 ## 📖 Project Overview
 This project demonstrates an end-to-end data pipeline and analytics solution for live and forecasted weather data using **Microsoft Fabric**. A custom **Python**. crawler **ingests real-time and forecast data from the OpenWeather API**, enriched with metadata such as sunrise/sunset times, etc.
 
