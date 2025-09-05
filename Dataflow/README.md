@@ -4,7 +4,7 @@ This demonstrates a bronze–silver–gold dataflow architecture in Microsoft Fa
 
 I use raw weather datasets (forecast_data *.csv) stored in Lakehouse Files and transform them step by step into clean, structured tables.
 
-<img width="1813" height="432" alt="image" src="https://github.com/user-attachments/assets/f4e49938-9ba1-4ca9-afc1-8e59738832b7" />
+<img width="1765" height="794" alt="image" src="https://github.com/user-attachments/assets/5786b83c-6548-4066-9948-156ccc2d69bc" />
 
 ### 🏗️ Architecture
 ```Raw CSV (Bronze) → Dataflow Gen2 → Silver (Clean, Typed) → Gold (Curated Subset) → Power BI / Analytics```
