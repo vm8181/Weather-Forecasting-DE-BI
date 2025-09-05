@@ -1,4 +1,4 @@
-# 🌦️ Weather Dashboard - Final Version  
+# 🌦️ Weather Dashboard  
 
 This project is a **Weather Forecast Dashboard** built to display **real-time weather conditions** and a **5-day forecast** in a clean, interactive, and user-friendly interface.  
 
@@ -35,39 +35,20 @@ This project is a **Weather Forecast Dashboard** built to display **real-time we
 
 - **Power BI / Data Visualization Tool** (for dashboard design)  
 - **OpenWeather API** (or similar) for fetching real-time weather data  
-- **Data Transformations**: API data cleaned and structured for visuals  
-- **UI Design**: Blue theme with intuitive icons and charts  
-
----
-
-## 📂 Project Structure  
-
-```bash
-📦 Weather-Dashboard
- ┣ 📜 README.md            # Project documentation  
- ┣ 📊 Dashboard.pbix        # Power BI file (if applicable)  
- ┣ 📂 screenshots           # Dashboard images  
- ┃ ┗ 📜 final_dashboard.png  
- ┗ 📂 data                  # API / raw data samples  
-```
+- **Power Automate**: On-Demand refresh button available to get the updated data in the report 
 
 ---
 
 ## 🚀 How to Use  
-
-1. Clone the repository:  
-   ```bash
-   git clone https://github.com/your-username/weather-dashboard.git
-   ```
-2. Open the **Power BI (.pbix)** file or run the dashboard in your chosen tool.  
-3. Enter a city name in the search bar to view live weather data.  
-4. Click **Refresh** to update weather information.  
+1. Open the **Power BI (.pbix)** file or run the dashboard in your chosen tool.  
+2. Enter a city name in the search bar to view live weather data.  
+3. Click **Refresh** to update weather information.  
 
 ---
 
 ## 📸 Preview  
 
-![Weather Dashboard](./screenshots/final_dashboard.png)  
+<img width="1492" height="862" alt="image" src="https://github.com/user-attachments/assets/25a650ac-2ec5-4464-9742-3b2f05784b71" />
 
 ---
 
@@ -84,8 +65,6 @@ This project is a **Weather Forecast Dashboard** built to display **real-time we
 
 Contributions are welcome! If you’d like to improve the dashboard or extend features (e.g., multi-city comparison, alerts, historical weather trends), feel free to fork the repo and create a pull request.  
 
----
-
-## 📜 License  
+---  
 
 This project is licensed under the **MIT License** – you’re free to use, modify, and distribute with attribution.  
