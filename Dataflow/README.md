@@ -196,12 +196,10 @@ in
 ```
 
 ### ✅ Output Tables
-- weather_data_silver → Full dataset with lineage & file metadata
-- weather_data_gold → Clean analytical dataset ready for BI
+- forecast/hourly/current_data_silver → Full dataset with lineage & file metadata
+- forecast/hourly/current_data_gold → Clean analytical dataset ready for BI
 
 ### 📊 Usage
 - Connect Power BI directly to the Gold table for reporting.
 - Use Silver for debugging, lineage, and data quality checks.
 - Extend the pipeline by adding a Platinum layer (aggregations, KPIs).
-in
-#"Changed column type"
