@@ -1,6 +1,3 @@
-<img width="1492" height="862" alt="image" src="https://github.com/user-attachments/assets/8f37b2fc-aa43-4214-a8b1-e2ae6e81c616" /><img width="1492" height="862" alt="image" src="https://github.com/user-attachments/assets/c9c3e9d8-10dc-4a8b-b876-0a85c439c2c8" />
-# 🌦️The Climate Compass: Weather Forecasting
-
 ## 📖 Project Overview
 This project demonstrates an end-to-end data pipeline and analytics solution for live and forecasted weather data using **Microsoft Fabric**. A custom **Python**. crawler **ingests real-time and forecast data from the OpenWeather API**, enriched with metadata such as sunrise/sunset times, etc.
 
