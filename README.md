@@ -173,28 +173,6 @@ HAVING COUNT(*) > 1;
 
 ---
 
-## 🗂️ Repository Structure
-```
-/WeatherProject
-│
-├─ /notebooks
-│   └─ crawler_notebook.ipynb
-│
-├─ /dataflows
-│   └─ weather_data_ETL.json
-│
-├─ /pipelines
-│   └─ weather_datapipeline.json
-    └─ hourly_weather_pipeline.json
-│
-├─ /powerbi
-│   └─ WeatherReport.pbix
-│
-└─ README.md   ← (this file)
-```
-
----
-
 💡 With this setup, you get **a robust end-to-end BI solution**:  
 ✔ Continuous history  
 ✔ Live updates on demand  
