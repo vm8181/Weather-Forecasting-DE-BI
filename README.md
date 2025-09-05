@@ -1,8 +1,8 @@
-
+<img width="1492" height="862" alt="image" src="https://github.com/user-attachments/assets/8f37b2fc-aa43-4214-a8b1-e2ae6e81c616" /><img width="1492" height="862" alt="image" src="https://github.com/user-attachments/assets/c9c3e9d8-10dc-4a8b-b876-0a85c439c2c8" />
 # 🌦️The Climate Compass: Weather Forecasting
 
 ## 📖 Project Overview
-This project demonstrates an end-to-end data pipeline and analytics solution for live and forecasted weather data using **Microsoft Fabric**. A custom **Python**. crawler **ingests real-time and forecast data from the OpenWeather API**, enriched with metadata such as sunrise/sunset times.
+This project demonstrates an end-to-end data pipeline and analytics solution for live and forecasted weather data using **Microsoft Fabric**. A custom **Python**. crawler **ingests real-time and forecast data from the OpenWeather API**, enriched with metadata such as sunrise/sunset times, etc.
 
 On the **Data Engineering** side, the pipeline handles ingestion, lineage, and incremental refreshes. On the **Business Intelligence** side, **Power BI (DirectLake)** delivers **interactive dashboard**, including city-level snapshots, historical trends, and forecast insights.
 
@@ -30,9 +30,10 @@ This project integrates Data Engineering + Business Intelligence capabilities us
    - Ensures deduplication, data coverage by city, and latest timestamps.
    - Helps in data quality checks on Gold tables.
 
-- **Power BI**
+- **Power BI + Power Automate**
    - Visualizes trends and latest weather snapshots.
-   - Connects directly to Gold table via DirectLake → no dataset refresh needed.
+   - Connects directly to Gold table via Warehouse → On-demand dataset refresh available.
+   - Power Automate to automate the on-demand refresh to get the update data in the report.
 
 - **Power Query / Dataflow Gen2**
    - Transforms raw Bronze files into Silver (append log) and Gold (deduplicated) Delta tables.
@@ -58,7 +59,7 @@ Together, they deliver an end-to-end robust BI + DE solution.
      ```
      Files/forecast_data_broze/forecast_data {yyyy-MM-dd HH:mm:ss}.csv
      ```
-   - Example: `forecast_data 2025-08-27 10:15:30.csv`.
+   - Example: `forecast_data_bronze 2025-08-27 10:15:30.csv`.
 
 2. **Lakehouse (WeatherLakehouse)**  
    - Stores raw files in `Files/weather_data_broze`.  
@@ -78,10 +79,10 @@ Together, they deliver an end-to-end robust BI + DE solution.
      1. Run **Notebook (Data_Crawler)**.  
      2. **Wait 20–30 seconds** (file commit buffer).  
      3. Refresh **Dataflow Gen2**.  
-   - Runs **every 60 minutes (schedule)**.
+   - Runs **every 4 hour (schedule)**.
 
 5. **Power BI Dashboard**  
-   - Connects directly to `forecast_data_gold` via **DirectLake**.  
+   - Connects directly to `forecast_weather_gold` via **Warehouse**.  
    - Pages:
      - **Overview**: Pending.  
      - **Snapshot**: latest temperature/humidity by city.
@@ -92,17 +93,17 @@ Together, they deliver an end-to-end robust BI + DE solution.
 ```
 Notebook (Crawler)
     ↓
-Raw CSV files (Files/weather_data_broze in WeatherLakehouse)
+Raw CSV files (Files/forecast_data_broze, hourly_data_broze, weather_data_broze in WeatherLakehouse)
     ↓
 Dataflow Gen2
-    ├─ Silver Table: forecast_data_silver (append log)
-    └─ Gold Table: forecast_data_gold (deduped, reporting)
+    ├─ Silver Table: forecast_weather_silver, hourly_weather_silver, current_weather_silver (append log)
+    └─ Gold Table: forecast_weather_gold, hourly_weather_gold, current_weather_gold (deduped, reporting)
     ↓
 Pipeline (orchestrates Notebook → Wait → Dataflow refresh)
     ↓
-Power BI (DirectLake → Gold table)
+Power BI (Warehouse → Gold table)
     ↓
-Users (insights + live refresh)
+Users (insights + On-Demand refresh)
 ```
 
 ## ⚙️ Pipeline Configuration
@@ -121,23 +122,18 @@ Users (insights + live refresh)
    - Retry: `2`  
    - Retry interval: `120 sec`
 
-**Schedule:** Every **60 minutes**, no concurrent runs.
+**Schedule:** Every **4 hour**, no concurrent runs.
 
 ---
 
 ## 📊 Power BI Setup
 
 ### Connection
-- Dataset: **forecast_data_gold** (DirectLake from Lakehouse).  
-- DirectLake ensures:
-  - No dataset refresh required.  
-  - Reports always show the current Gold table content.
+- Dataset: **forecast_weather_gold, hourly_weather_gold, current_weather_gold** (Warehouse from Lakehouse).
+- **On-Demand dataset refresh available**, will help to get updated data in the report. 
 
-### Pages
-- **Overview**:  
- Pending 
-- **Snapshot**:  
-  - Table of latest weather by city (`Latest Timestamp`).
+### Weather Report:  
+ <img width="1492" height="862" alt="image" src="https://github.com/user-attachments/assets/b9144fd3-bfdf-4524-8980-5db9060a1390" />
 
 ---
 
@@ -169,12 +165,12 @@ HAVING COUNT(*) > 1;
 
 ## 🛠️ Best Practices
 
-- **Keep raw files untouched** → always stored in `Files/weather_data_broze`.  
+- **Keep raw files untouched** → always stored in `Files/forecast_weather_bronze`.  
 - **Use Silver for append logs** → preserves lineage.  
 - **Use Gold for reporting** → deduped, clean, optimized.  
-- **DirectLake for Power BI** → no dataset refresh needed.  
+- **On-Demand Refresh in Power BI** →  One click refresh button is available.  
 - **Retry & Timeout settings** → handle transient failures gracefully.  
-- **Single source of refresh (Pipeline)** → avoid dedup errors.  
+- **Single source of refresh (Pipeline)** → avoid dedup errors. 
 
 ---
 
@@ -186,10 +182,11 @@ HAVING COUNT(*) > 1;
 │   └─ crawler_notebook.ipynb
 │
 ├─ /dataflows
-│   └─ weather_dataflow.json
+│   └─ weather_data_ETL.json
 │
 ├─ /pipelines
-│   └─ WeatherHourlyPipeline.json
+│   └─ weather_datapipeline.json
+    └─ hourly_weather_pipeline.json
 │
 ├─ /powerbi
 │   └─ WeatherReport.pbix
