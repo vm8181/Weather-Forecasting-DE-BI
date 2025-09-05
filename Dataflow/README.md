@@ -28,9 +28,6 @@ Each file contains weather readings (temperature, humidity, pressure, etc.) for 
 ---
 
 ## ⚙️ Dataflow Queries
-
-### 1. Silver Layer – `forecast_data_silver`
-
 **Purpose**:  
 - Load raw CSV files  
 - Filter only weather dataset files  
@@ -38,37 +35,165 @@ Each file contains weather readings (temperature, humidity, pressure, etc.) for 
 - Extract crawl timestamp from file name  
 - Apply strong data types  
 
+### 1. Silver Layer – `forecast_weather_silver`
 ```m
 let
-  Source = Lakehouse.Contents([]),
-  #"Navigation 1" = Source{[workspaceId = "abec62f6-1fc0-46ba-a00e-3d9b73229de3"]}[Data],
-  #"Navigation 2" = #"Navigation 1"{[lakehouseId = "78471b36-06e6-4207-8772-243722b76e5b"]}[Data],
-  #"Navigation 3" = #"Navigation 2"{[Id = "Files", ItemKind = "Folder"]}[Data],
-  #"Expanded Content" = Table.ExpandTableColumn(#"Navigation 3", "Content", {"Content", "Name", "Extension", "Date accessed", "Date modified", "Date created", "Attributes", "Folder Path"}, {"Content.1", "Name.1", "Extension.1", "Date accessed.1", "Date modified.1", "Date created.1", "Attributes.1", "Folder Path.1"}),
+  Source = Lakehouse.Contents(null),
+  Navigation = Source{[workspaceId = "e406e233-b34a-489d-8cd5-8851d4e2a74a"]}[Data],
+  #"Navigation 1" = Navigation{[lakehouseId = "5bf8e2ae-a8c7-41ec-ad55-1c807526ffa9"]}[Data],
+  #"Navigation 2" = #"Navigation 1"{[Id = "Files", ItemKind = "Folder"]}[Data],
+  #"Filtered rows" = Table.SelectRows(#"Navigation 2", each ([Name] = "forecast_data_bronze")),
+  #"Expanded Content" = Table.ExpandTableColumn(#"Filtered rows", "Content", {"Content", "Name"}, {"Content.1", "Name.1"}),
   #"Filtered hidden files" = Table.SelectRows(#"Expanded Content", each [Attributes]?[Hidden]? <> true),
   #"Invoke custom function" = Table.AddColumn(#"Filtered hidden files", "Transform file", each #"Transform file"([Content.1])),
-  #"Removed other columns" = Table.SelectColumns(#"Invoke custom function", {"Name.1", "Folder Path.1", "Transform file"}),
+  #"Removed other columns" = Table.SelectColumns(#"Invoke custom function", {"Name.1", "Folder Path", "Transform file"}),
   #"Expanded table column" = Table.ExpandTableColumn(#"Removed other columns", "Transform file", Table.ColumnNames(#"Transform file"(#"Sample file"))),
-  #"Renamed columns" = Table.RenameColumns(#"Expanded table column", {{"Name.1", "source_file"}, {"Folder Path.1", "folder_path"}}),
-  #"Changed column type" = Table.TransformColumnTypes(#"Renamed columns", {{"crawl_time", type datetime}, {"city", type text}, {"city_lat", type number}, {"city_lon", type number}, {"timezone_offset_s", Int64.Type}, {"forecast_time", type datetime}, {"temp_c", type number}, {"feels_like_c", type number}, {"temp_min_c", type number}, {"temp_max_c", type number}, {"pressure_hpa", Int64.Type}, {"humidity_pct", Int64.Type}, {"visibility_m", Int64.Type}, {"wind_speed_ms", type number}, {"wind_deg", Int64.Type}, {"cloudiness_pct", Int64.Type}, {"weather_main", type text}, {"weather_desc", type text}, {"pop", type number}, {"rain_3h_mm", type number}, {"snow_3h_mm", type text}, {"sunrise_ist", type datetime}, {"sunset_ist", type datetime}, {"folder_path", type text}, {"source_file", type text}})
+  #"Renamed columns" = Table.RenameColumns(#"Expanded table column", {{"Name.1", "source_path"}, {"Folder Path", "folder_path"}}),
+  #"Changed column type" = Table.TransformColumnTypes(#"Renamed columns", {{"crawl_date", type date}, {"forecast_date", type date}, {"source_path", type text}, {"crawl_time", type text}, {"city", type text}, {"sunrise", type text}, {"sunset", type text}, {"weather_main", type text}, {"weather_desc", type text}, {"temp_min(°C)", type number}, {"temp_max(°C)", type number}, {"morning_temp(°C)", type number}, {"day_temp(°C)", type number}, {"evening_temp(°C)", type number}, {"night_temp(°C)", type number}, {"pressure(hPa)", type number}, {"humidity(%)", type number}, {"wind_speed(m/s)", type number}, {"wind_deg(°)", type number}, {"cloudiness(%)", type number}, {"pop(%)", type number}, {"rain(mm)", type number}})
 in
   #"Changed column type"
 ```
 
-### 2. Gold Layer – `forecast_data_gold`
-**Purpose**:  
-Provide a curated dataset with only analytical columns (drop metadata).  
+### 2. Gold Layer – `forecast_weather_gold` 
 ```m
 let
-  Source = weather_data_silver,
-  #"Removed columns" = Table.RemoveColumns(Source, {"source_file", "folder_path", "timezone_offset_s"}),
-  #"Capitalized each word" = Table.TransformColumns(#"Removed columns", {{"weather_desc", each Text.Proper(Text.From(_)), type nullable text}}),
-  #"Added custom" = Table.AddColumn(#"Capitalized each word", "visibility_km", each Number.FromText([visibility_m]) / 1000),
-  #"Changed column type" = Table.TransformColumnTypes(#"Added custom", {{"crawl_time", type datetime}, {"forecast_time", type datetime}, {"sunrise_ist", type datetime}, {"sunset_ist", type datetime}, {"weather_desc", type text}, {"weather_main", type text}, {"city", type text}, {"snow_3h_mm", type number}, {"rain_3h_mm", type number}, {"pop", type number}, {"wind_speed_ms", type number}, {"cloudiness_pct", type number}, {"wind_deg", type number}, {"humidity_pct", type number}, {"visibility_m", type number}, {"pressure_hpa", type number}, {"temp_max_c", type number}, {"temp_c", type number}, {"feels_like_c", type number}, {"temp_min_c", type number}, {"city_lat", type number}, {"city_lon", type number}, {"visibility_km", type number}})
+    Source = forecast_weather_silver,
+    ChangedType = Table.TransformColumnTypes(Source, {{"crawl_time", type time}}),
+    LatestDate = List.Max(ChangedType[crawl_date]),
+    EarliestTime = List.Min(Table.SelectRows(ChangedType, each [crawl_date] = LatestDate)[crawl_time]),
+    FilteredRows = Table.SelectRows(
+        ChangedType,
+        each [crawl_date] = LatestDate and [crawl_time] = EarliestTime
+    ),
+    AddedDays = Table.AddColumn(
+        FilteredRows,
+        "Days",  each let
+        TodayDate = Date.From(DateTime.LocalNow()),
+        TomorrowDate = Date.AddDays(TodayDate, 1)
+    in
+        if [forecast_date] = TodayDate then "Today"
+        else if [forecast_date] = TomorrowDate then "Tomorrow"
+        else Date.ToText([forecast_date], "ddd"),
+    type text
+),
+    AddedSortColumn = Table.AddColumn(
+        AddedDays,
+        "DaySort",
+        each if [Days] = "Today" then 1
+             else if [Days] = "Tomorrow" then 2
+             else Date.DayOfWeek([forecast_date], Day.Monday) + 3,
+        Int64.Type
+    ),
+  #"Choose columns" = Table.SelectColumns(AddedSortColumn, {"crawl_date", "city", "forecast_date", "sunrise", "sunset", "temp_min(°C)", "temp_max(°C)", "morning_temp(°C)", "day_temp(°C)", "evening_temp(°C)", "night_temp(°C)", "pressure(hPa)", "humidity(%)", "wind_speed(m/s)", "wind_deg(°)", "cloudiness(%)", "weather_main", "weather_desc", "pop(%)", "rain(mm)", "Days", "DaySort"})
+in
+#"Choose columns"
+```
+---
+### 3. Silver Layer – `hourly_weather_silver`
+```m
+let
+  Source = Lakehouse.Contents(null),
+  Navigation = Source{[workspaceId = "e406e233-b34a-489d-8cd5-8851d4e2a74a"]}[Data],
+  #"Navigation 1" = Navigation{[lakehouseId = "5bf8e2ae-a8c7-41ec-ad55-1c807526ffa9"]}[Data],
+  #"Navigation 2" = #"Navigation 1"{[Id = "Files", ItemKind = "Folder"]}[Data],
+  #"Filtered rows" = Table.SelectRows(#"Navigation 2", each ([Name] = "hourly_data_bronze")),
+  #"Expanded Content" = Table.ExpandTableColumn(#"Filtered rows", "Content", {"Content", "Name"}, {"Content.1", "Name.1"}),
+  #"Filtered hidden files" = Table.SelectRows(#"Expanded Content", each [Attributes]?[Hidden]? <> true),
+  #"Invoke custom function" = Table.AddColumn(#"Filtered hidden files", "Transform file (2)", each #"Transform file (2)"([Content.1])),
+  #"Removed other columns" = Table.SelectColumns(#"Invoke custom function", {"Name.1", "Folder Path", "Transform file (2)"}),
+  #"Expanded table column" = Table.ExpandTableColumn(#"Removed other columns", "Transform file (2)", Table.ColumnNames(#"Transform file (2)"(#"Sample file (2)"))),
+  #"Renamed columns" = Table.RenameColumns(#"Expanded table column", {{"Folder Path", "folder_path"}, {"Name.1", "source_file"}}),
+  #"Split column by delimiter" = Table.SplitColumn(Table.TransformColumnTypes(#"Renamed columns", {{"crawl_time", type text}}), "crawl_time", Splitter.SplitTextByDelimiter(" "), {"crawl_date", "crawl_time"}),
+  #"Split column by delimiter 1" = Table.SplitColumn(Table.TransformColumnTypes(#"Split column by delimiter", {{"forecast_time", type text}}), "forecast_time", Splitter.SplitTextByDelimiter(" "), {"forecast_date", "forecast_time"}),
+  #"Changed column type" = Table.TransformColumnTypes(#"Split column by delimiter 1", {{"crawl_time", type text}, {"city", type text}, {"forecast_time", type text}, {"temp_c", type number}, {"feels_like_c", type number}, {"temp_min_c", type number}, {"temp_max_c", type number}, {"pressure_hpa", Int64.Type}, {"humidity_pct", Int64.Type}, {"wind_speed_ms", type number}, {"wind_deg", Int64.Type}, {"cloudiness_pct", Int64.Type}, {"weather_main", type text}, {"weather_desc", type text}, {"pop", type number}, {"rain_3h_mm", type number}, {"crawl_date", type date}, {"source_file", type text}, {"forecast_date", type date}}),
+  #"Filtered rows 1" = Table.SelectRows(#"Changed column type", each [crawl_date] <> null and [crawl_date] <> "")
+in
+  #"Filtered rows 1"
+```
+
+### 4. Gold Layer – `hourly_weather_gold`
+```m
+let
+    Source = hourly_weather_silver,
+    ChangedType = Table.TransformColumnTypes(Source, {{"crawl_time", type time}}),
+    LatestDate = List.Max(ChangedType[crawl_date]),
+    EarliestTime = List.Min(Table.SelectRows(ChangedType, each [crawl_date] = LatestDate)[crawl_time]),
+    #"Filtered rows" = Table.SelectRows(
+        ChangedType,
+        each [crawl_date] = LatestDate and [crawl_time] = EarliestTime
+    ),
+    #"Added SortCol" = Table.AddColumn(
+    #"Filtered rows",
+    "hour_sort",
+    each Time.Hour(Time.FromText([forecast_time])),
+    Int64.Type
+),
+    Format_time = Table.TransformColumns(
+        #"Added SortCol",
+        {"forecast_time", each Time.ToText(Time.From(_), "HH:mm"), type text}
+    ),
+
+    #"Choose columns" = Table.SelectColumns(
+        Format_time,
+        {"crawl_date", "city", "forecast_time", "hour_sort", "temp_c", "feels_like_c", "temp_min_c",
+         "temp_max_c", "pressure_hpa", "humidity_pct", "wind_speed_ms", "wind_deg",
+         "cloudiness_pct", "weather_main", "weather_desc", "pop", "rain_3h_mm"}
+    )
+in
+    #"Choose columns"
+```
+### 5. Silver Layer – `current_weather_silver`
+```m
+let
+  Source = Lakehouse.Contents(null),
+  Navigation = Source{[workspaceId = "e406e233-b34a-489d-8cd5-8851d4e2a74a"]}[Data],
+  #"Navigation 1" = Navigation{[lakehouseId = "5bf8e2ae-a8c7-41ec-ad55-1c807526ffa9"]}[Data],
+  #"Navigation 2" = #"Navigation 1"{[Id = "Files", ItemKind = "Folder"]}[Data],
+  #"Filtered rows" = Table.SelectRows(#"Navigation 2", each ([Name] = "weather_data_bronze")),
+  #"Expanded Content" = Table.ExpandTableColumn(#"Filtered rows", "Content", {"Content", "Name"}, {"Content.1", "Name.1"}),
+  #"Filtered hidden files" = Table.SelectRows(#"Expanded Content", each [Attributes]?[Hidden]? <> true),
+  #"Invoke custom function" = Table.AddColumn(#"Filtered hidden files", "Transform file (3)", each #"Transform file (3)"([Content.1])),
+  #"Removed other columns" = Table.SelectColumns(#"Invoke custom function", {"Name.1", "Folder Path", "Transform file (3)"}),
+  #"Expanded table column" = Table.ExpandTableColumn(#"Removed other columns", "Transform file (3)", Table.ColumnNames(#"Transform file (3)"(#"Sample file (3)"))),
+  #"Renamed columns" = Table.RenameColumns(#"Expanded table column", {{"Folder Path", "folder_path"}, {"Name.1", "source_file"}}),
+  #"Split column by delimiter" = Table.SplitColumn(Table.TransformColumnTypes(#"Renamed columns", {{"date_time", type text}}), "date_time", Splitter.SplitTextByDelimiter(" "), {"crawl_date", "crawl_time"}),
+  #"Split column by delimiter 1" = Table.SplitColumn(Table.TransformColumnTypes(#"Split column by delimiter", {{"sunrise_ist", type text}}), "sunrise_ist", Splitter.SplitTextByDelimiter(" "), {"sunrise_date", "sunrise_time"}),
+  #"Split column by delimiter 2" = Table.SplitColumn(Table.TransformColumnTypes(#"Split column by delimiter 1", {{"sunset_ist", type text}}), "sunset_ist", Splitter.SplitTextByDelimiter(" "), {"sunset_date", "sunset_time"}),
+  #"Changed column type" = Table.TransformColumnTypes(#"Split column by delimiter 2", {{"city", type text}, {"temperature(°C)", type number}, {"feels_like(°C)", type number}, {"temp_min(°C)", type number}, {"temp_max(°C)", type number}, {"pressure(hPa)", Int64.Type}, {"humidity(%)", Int64.Type}, {"visibility(m)", Int64.Type}, {"wind_speed(m/s)", type number}, {"wind_deg(°)", Int64.Type}, {"cloudiness(%)", Int64.Type}, {"weather_main", type text}, {"weather_description", type text}, {"crawl_date", type date}, {"crawl_time", type text}, {"sunrise_date", type date}, {"sunrise_time", type text}, {"sunset_date", type date}, {"sunset_time", type text}, {"source_file", type text}})
 in
   #"Changed column type"
 ```
----
+
+### 2. Gold Layer – `current_weather_gold`
+```m
+let
+  Source = current_weather_silver,
+  #"Changed Type" = Table.TransformColumnTypes(Source, {{"crawl_time", type time}}),
+  #"Added crawl_datetime" = Table.AddColumn(
+        #"Changed Type", 
+        "crawl_datetime", 
+        each #datetime(
+            Date.Year([crawl_date]), 
+            Date.Month([crawl_date]), 
+            Date.Day([crawl_date]), 
+            Time.Hour([crawl_time]), 
+            Time.Minute([crawl_time]), 
+            Time.Second([crawl_time])
+        ),
+        type datetime
+    ),
+  MaxDateTime = List.Max(#"Added crawl_datetime"[crawl_datetime]),
+  FinalFiltered = Table.SelectRows(#"Added crawl_datetime", each [crawl_datetime] = MaxDateTime),
+  Formatting = Table.TransformColumns(FinalFiltered,
+      {{"crawl_time", each Time.ToText(Time.From(_), "HH:mm"), type text},
+      {"sunrise_time", each Time.ToText(Time.From(_), "HH:mm"), type text},
+        {"sunset_time", each Time.ToText(Time.From(_), "HH:mm"), type text}}),
+  #"Inserted day name" = Table.AddColumn(Formatting, "Day name", each Date.DayOfWeekName([crawl_date]), type nullable text),
+  #"Capitalized each word" = Table.TransformColumns(#"Inserted day name", {{"weather_description", each Text.Proper(_), type nullable text}}),
+  #"Choose columns" = Table.SelectColumns(#"Capitalized each word", {"crawl_date", "crawl_time", "city", "temperature(°C)", "feels_like(°C)", "temp_min(°C)", "temp_max(°C)", "pressure(hPa)", "humidity(%)", "visibility(m)", "wind_speed(m/s)", "wind_deg(°)", "cloudiness(%)", "weather_main", "weather_description", "sunrise_time", "sunset_time", "Day name"})
+in
+  #"Choose columns"
+```
 
 ### ✅ Output Tables
 - weather_data_silver → Full dataset with lineage & file metadata
