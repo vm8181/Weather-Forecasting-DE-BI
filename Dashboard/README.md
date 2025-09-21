@@ -64,7 +64,3 @@ This project is a **Weather Forecast Dashboard** built to display **real-time we
 ## 🤝 Contributing  
 
 Contributions are welcome! If you’d like to improve the dashboard or extend features (e.g., multi-city comparison, alerts, historical weather trends), feel free to fork the repo and create a pull request.  
-
----  
-
-This project is licensed under the **MIT License** – you’re free to use, modify, and distribute with attribution.  
