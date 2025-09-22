@@ -7,7 +7,7 @@ This project is a **Weather Forecast Dashboard** built to display **real-time we
 
 ## 📸 Preview  
 
-<img width="1337" height="730" alt="image" src="https://github.com/user-attachments/assets/42a240da-e37f-41e6-a7dc-8226a742a6a2" />
+<img width="1322" height="723" alt="image" src="https://github.com/user-attachments/assets/bedd376e-b3fa-4b9d-98cb-9e4f7b685317" />
 
 ## 📌 Features  
 
