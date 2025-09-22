@@ -132,7 +132,7 @@ Users (insights + On-Demand refresh)
 - **On-Demand dataset refresh available**, will help to get updated data in the report. 
 
 ### Weather Report:  
- <img width="1492" height="862" alt="image" src="https://github.com/user-attachments/assets/b9144fd3-bfdf-4524-8980-5db9060a1390" />
+<img width="1322" height="723" alt="image" src="https://github.com/user-attachments/assets/cf90bb27-15c3-4c74-8e63-d573f9d17d1d" />
 
 ---
 
