@@ -4,6 +4,11 @@ This project is a **Weather Forecast Dashboard** built to display **real-time we
 
 ---
 
+
+## 📸 Preview  
+
+<img width="1337" height="730" alt="image" src="https://github.com/user-attachments/assets/42a240da-e37f-41e6-a7dc-8226a742a6a2" />
+
 ## 📌 Features  
 
 - **Current Weather Overview**  
@@ -43,12 +48,6 @@ This project is a **Weather Forecast Dashboard** built to display **real-time we
 1. Open the **Power BI (.pbix)** file or run the dashboard in your chosen tool.  
 2. Enter a city name in the search bar to view live weather data.  
 3. Click **Refresh** to update weather information.  
-
----
-
-## 📸 Preview  
-
-<img width="1492" height="862" alt="image" src="https://github.com/user-attachments/assets/25a650ac-2ec5-4464-9742-3b2f05784b71" />
 
 ---
 
